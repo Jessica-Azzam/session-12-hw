@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Cart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        .product-container, .cart-container {
+            border: 1px solid #ccc;
+            background: #fff;
+            width: calc(50% - 10px);
+            min-height: 100vh;
+            padding: 20px;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+        .product-container:last-child,
+        .cart-container {
+            margin-right: 0;
+        }
+        .card {
+            border: 1px solid #eee;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+        .top {
+            margin-bottom: 10px;
+        }
+        .name {
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+        .price {
+            color: green;
+            font-size: 1.2em;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button[disabled] {
+            background-color: #ccc;
+        }
+        #cart {
+            border-top: 1px solid #ccc;
+            margin-top: 20px;
+            padding-top: 10px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .total {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .notification {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            transition: opacity 0.5s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .notification.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (max-width: 768px) {
+            .product-container, .cart-container {
+                width: 100%;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="product-container" id="products"></div>
+        <div class="cart-container" id="cart"></div>
+    </main>
+    <div class="notification" id="notification">Item added to cart!</div>
+    <script>
+        let cart = {}; // productId : quantity
+        const products = {
+            101: {
+                name: 'Wireless Mouse',
+                price: 29.99,
+                category: 'Electronics',
+                inStock: true,
+                colors: ['red', 'blue'],
+                description: 'A versatile wireless mouse for all your needs.',
+                image: 'images.jpeg'
+            },
+            102: {
+                name: 'Notebook',
+                price: 5.99,
+                category: 'Stationery',
+                inStock: true,
+                description: 'A 100-page notebook perfect for notes and sketches.',
+                image: 'notebook.jpg'
+            },
+            103: {
+                name: 'Coffee Mug',
+                price: 12.5,
+                category: 'Kitchenware',
+                inStock: false,
+                colors: ['yellow', 'white'],
+                description: 'A stylish mug for your morning coffee.',
+                image: 'coffie cup.jpeg'
+            }
+        };
+    
+        document.addEventListener("DOMContentLoaded", populateProducts);
+        document.getElementById('cart').addEventListener('click', handleCartClick);
+    
+        function populateProducts() {
+            const productsGallery = document.getElementById('products');
+            productsGallery.innerHTML = Object.entries(products).map(([id, product]) => generateSingleProductHTML(id, product)).join('');
+        }
+    
+        function generateSingleProductHTML(id, { name, price, inStock, colors = [], description = 'No description available.', image }) {
+            return `
+            <div class="card" aria-labelledby="product-${id}">
+                <div class="top" id="product-${id}">
+                    <img src="${image}" alt="${name}" style="width: 100%; height: auto; border-radius: 5px;"/>
+                    ${inStock ? '<span>In Stock</span>' : '<span style="color:red;">Out of Stock</span>'}
+                    <div>Colors: ${colors.length ? colors.join(', ') : 'N/A'}</div>
+                </div>
+                <div class="bottom">
+                    <div class="name">${name}</div>
+                    <div class="description">${description}</div>
+                    <div class="price">$${price.toFixed(2)}</div>
+                    <button onclick="addToCart(${id})" ${inStock ? '' : 'disabled'}>Add To Cart</button>
+                </div>
+            </div>
+            `;
+        }
+    
+        function addToCart(productId) {
+            cart[productId] = (cart[productId] || 0) + 1;
+            console.log(`Added product of ID ${productId} to cart!`);
+            showNotification();
+            updateCartDisplay();
+        }
+    
+        function handleCartClick(event) {
+            if (event.target.classList.contains('remove')) {
+                const productId = event.target.dataset.id;
+                delete cart[productId];
+                updateCartDisplay();
+            }
+        }
+    
+        function showNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+    
+        function updateCartDisplay() {
+            const cartContainer = document.getElementById('cart');
+            const cartItems = Object.entries(cart)
+                .map(([id, quantity]) => {
+                    const product = products[id];
+                    return `<div class="cart-item">
+                                <span>${product.name} (x${quantity})</span>
+                                <button class="remove" data-id="${id}">Remove</button>
+                            </div>`;
+                })
+                .join('');
+    
+            const totalPrice = Object.entries(cart)
+                .reduce((total, [id, quantity]) => total + (products[id].price * quantity), 0)
+                .toFixed(2);
+    
+            cartContainer.innerHTML = `
+                <h2>Shopping Cart</h2>
+                ${cartItems || '<div>Your cart is empty.</div>'}
+                <div class="total">Total: $${totalPrice}</div>
+                <button onclick="proceedToCheckout()" ${Object.keys(cart).length === 0 ? 'disabled' : ''}>Checkout</button>
+            `;
+        }
+    
+        function proceedToCheckout() {
+            alert('Proceeding to checkout...');
+        }
+    </script>
+    
